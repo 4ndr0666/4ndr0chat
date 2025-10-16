@@ -1,6 +1,6 @@
 import React, { forwardRef, useState } from 'react';
 import AutoResizeTextarea from './AutoResizeTextarea';
-import { SendIcon, ScrollUpIcon, ScrollDownIcon, InputGlyphIcon, ClearIcon, LinkIcon } from './IconComponents';
+import { SendIcon, ClearIcon, LinkIcon, AutoScrollOnIcon, AutoScrollOffIcon } from './IconComponents';
 
 interface ChatInputProps {
   input: string;
@@ -10,15 +10,18 @@ interface ChatInputProps {
   maxLength: number;
   onOpenUrlModal: () => void;
   hasAttachedUrl: boolean;
+  isAutoScrollEnabled: boolean;
+  onToggleAutoScroll: () => void;
 }
 
 const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
-  ({ input, setInput, onSendMessage, isLoading, maxLength, onOpenUrlModal, hasAttachedUrl }, ref) => {
+  ({ input, setInput, onSendMessage, isLoading, maxLength, onOpenUrlModal, hasAttachedUrl, isAutoScrollEnabled, onToggleAutoScroll }, ref) => {
     const [isFocused, setIsFocused] = useState(false);
+    const isOverLimit = input.length > maxLength;
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
-      if ((input.trim() || hasAttachedUrl) && !isLoading) {
+      if ((input.trim() || hasAttachedUrl) && !isLoading && !isOverLimit) {
         onSendMessage(input);
       }
     };
@@ -37,10 +40,8 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
       }
     }
 
-    const isOverLimit = input.length > maxLength;
-
     return (
-      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
+      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto relative">
         <div className={`chat-input-container ${isFocused ? 'is-focused' : ''} ${isOverLimit ? '!border-red-500' : ''}`}>
             <button 
               type="button" 
@@ -66,9 +67,7 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
               />
               {!input && (
                 <div className="input-glyph-placeholder-container">
-                  <div className="h-[1.5rem] flex items-center">
-                    <InputGlyphIcon className="h-5" />
-                  </div>
+                  <span className="input-caret-glyph">█</span>
                 </div>
               )}
               {input && (
@@ -91,12 +90,21 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
               <SendIcon />
             </button>
 
-            <div className="decorative-scrollbar flex-shrink-0">
-              <ScrollUpIcon />
-              <div className="w-1.5 h-1.5 bg-scrollbar-dot rounded-full"></div>
-              <ScrollDownIcon />
-            </div>
+            <button
+              type="button"
+              onClick={onToggleAutoScroll}
+              className={`autoscroll-toggle-button ${!isAutoScrollEnabled ? 'is-locked' : ''}`}
+              aria-label={isAutoScrollEnabled ? "Disable auto-scroll" : "Enable auto-scroll"}
+              title={isAutoScrollEnabled ? "Auto-scroll is ON" : "Auto-scroll is OFF"}
+            >
+              {isAutoScrollEnabled ? <AutoScrollOnIcon /> : <AutoScrollOffIcon />}
+            </button>
         </div>
+        {isOverLimit && (
+            <p className="text-error text-xs text-right absolute -bottom-5 right-0">
+                Character limit exceeded. Transmission blocked.
+            </p>
+        )}
       </form>
     );
   }

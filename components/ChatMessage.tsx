@@ -43,39 +43,46 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isEditing, justEdite
       const codeBlocks = aiMessageRef.current.querySelectorAll('pre');
   
       codeBlocks.forEach(preEl => {
-        if (!preEl.querySelector('.code-language-tag')) {
-            const codeEl = preEl.querySelector('code');
-            const langClass = Array.from(codeEl?.classList || []).find(cls => typeof cls === 'string' && cls.startsWith('language-'));
-            
-            if (typeof langClass === 'string') {
-                const lang = langClass.replace('language-', '');
-                if (lang && lang.toLowerCase() !== 'plaintext') {
-                    const langTag = document.createElement('span');
-                    langTag.className = 'code-language-tag';
-                    langTag.innerText = lang;
-                    preEl.appendChild(langTag);
-                }
-            }
+        // Prevent adding a header if it already exists
+        if (preEl.querySelector('.code-block-header')) {
+            return;
         }
 
-        if (!preEl.querySelector('.copy-code-button')) {
-            const button = document.createElement('button');
-            button.className = 'copy-code-button';
-            button.ariaLabel = 'Copy code to clipboard';
-            button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>`;
-            
-            button.addEventListener('click', () => {
-              const codeEl = preEl.querySelector('code');
-              if (codeEl) {
-                navigator.clipboard.writeText(codeEl.innerText);
-                button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>`;
-                setTimeout(() => {
-                  button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>`;
-                }, 2000);
-              }
-            });
-            preEl.appendChild(button);
+        const header = document.createElement('div');
+        header.className = 'code-block-header';
+
+        const codeEl = preEl.querySelector('code');
+        const langClass = Array.from(codeEl?.classList || []).find(cls => typeof cls === 'string' && cls.startsWith('language-'));
+        
+        let lang = 'plaintext';
+        if (typeof langClass === 'string') {
+            lang = langClass.replace('language-', '');
         }
+
+        const langTag = document.createElement('span');
+        langTag.className = 'code-language-tag';
+        langTag.innerText = lang;
+        
+        const button = document.createElement('button');
+        button.className = 'copy-code-button';
+        button.ariaLabel = 'Copy code to clipboard';
+        const copyIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>`;
+        const checkIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>`;
+        button.innerHTML = copyIconSVG;
+        
+        button.addEventListener('click', () => {
+          if (codeEl) {
+            navigator.clipboard.writeText(codeEl.innerText);
+            button.innerHTML = checkIconSVG;
+            setTimeout(() => {
+              button.innerHTML = copyIconSVG;
+            }, 2000);
+          }
+        });
+
+        header.appendChild(langTag);
+        header.appendChild(button);
+        preEl.prepend(header);
       });
     }
   }, [renderedMarkdown, message.author]);

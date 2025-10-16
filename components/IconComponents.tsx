@@ -40,26 +40,6 @@ export const SplashScreenGlyphIcon: React.FC<{ className?: string }> = ({ classN
 );
 
 
-export const InputGlyphIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg 
-    viewBox="-8 3 10 18"
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-    fill="var(--accent-cyan)"
-    preserveAspectRatio="xMidYMid meet"
-  >
-    <rect x="0" y="11" width="2" height="2" rx="0.5" />
-    <rect x="-2" y="9" width="2" height="2" rx="0.5" />
-    <rect x="-4" y="7" width="2" height="2" rx="0.5" />
-    <rect x="-6" y="5" width="2" height="2" rx="0.5" />
-    <rect x="-8" y="3" width="2" height="2" rx="0.5" />
-    <rect x="-2" y="13" width="2" height="2" rx="0.5" />
-    <rect x="-4" y="15" width="2" height="2" rx="0.5" />
-    <rect x="-6" y="17" width="2" height="2" rx="0.5" />
-    <rect x="-8" y="19" width="2" height="2" rx="0.5" />
-  </svg>
-);
-
 export const SendIcon: React.FC = () => (
     <svg 
         xmlns="http://www.w3.org/2000/svg" 
@@ -139,7 +119,7 @@ export const ScrollUpIcon: React.FC = () => (
 
 export const ScrollDownIcon: React.FC = () => (
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M6 9L12 15L18 9" stroke="var(--text-tertiary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
 );
 
@@ -151,5 +131,18 @@ export const LinkIcon: React.FC = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path>
         <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path>
+    </svg>
+);
+
+export const AutoScrollOnIcon: React.FC<{className?: string}> = ({className}) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className ?? "h-6 w-6"}>
+        <path d="M12 3v14m-4-4l4 4 4-4"/>
+    </svg>
+);
+
+export const AutoScrollOffIcon: React.FC<{className?: string}> = ({className}) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className ?? "h-6 w-6"}>
+        <path d="M12 3v14m-4-4l4 4 4-4"/>
+        <line x1="3" y1="3" x2="21" y2="21" />
     </svg>
 );

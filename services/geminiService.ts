@@ -20,7 +20,7 @@ const buildHistoryForApi = (history: ChatMessageType[]) => {
 
 export function createChatSession(history: ChatMessageType[]): Chat {
     return ai.chats.create({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-2.5-pro',
         config: {
             systemInstruction: SYSTEM_INSTRUCTION,
         },
