@@ -71,7 +71,7 @@ export const SendIcon: React.FC = () => (
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="h-6 w-6 text-[var(--accent-cyan-mid)] group-hover:text-[var(--accent-cyan)] group-hover:drop-shadow-[0_0_4px_var(--accent-cyan)] transition-all duration-300 group-disabled:text-slate-500"
+        className="h-6 w-6 text-[var(--accent-cyan-mid)] group-hover:text-[var(--accent-cyan)] group-hover:drop-shadow-[0_0_4px_var(--accent-cyan)] transition-all duration-300 group-disabled:text-slate-500 group-disabled:hover:drop-shadow-none"
     >
         <path d="m3 3 3 9-3 9 19-9Z"></path><path d="M6 12h16"></path>
     </svg>
@@ -97,7 +97,7 @@ export const CopyIcon: React.FC = () => (
 export const CheckIcon: React.FC = () => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
-        className="h-5 w-5 text-green-400"
+        className="h-5 w-5 text-success"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -140,5 +140,16 @@ export const ScrollUpIcon: React.FC = () => (
 export const ScrollDownIcon: React.FC = () => (
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M6 9L12 15L18 9" stroke="var(--text-tertiary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+);
+
+export const ClearIcon: React.FC = () => (
+  <span className="text-2xl leading-none font-light" aria-hidden="true">&times;</span>
+);
+
+export const LinkIcon: React.FC = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path>
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path>
     </svg>
 );

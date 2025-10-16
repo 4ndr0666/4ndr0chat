@@ -8,3 +8,8 @@ export interface ChatMessage {
   author: Author;
   text: string;
 }
+
+export interface UrlContext {
+  url: string;
+  content: string;
+}

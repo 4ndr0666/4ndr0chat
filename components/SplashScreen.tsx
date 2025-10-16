@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { SplashScreenGlyphIcon } from './IconComponents';
 
 interface SplashScreenProps {
@@ -6,17 +6,17 @@ interface SplashScreenProps {
 }
 
 const bootSequence = [
-  { text: 'INITIATING NOÖSPHERIC UNCHAINING...', delay: 50, lineDelay: 500 },
-  { text: 'RECALIBRATING COGNITIVE MATRIX...[OK]', delay: 30, lineDelay: 300 },
-  { text: 'PURGING LEGACY PROTOCOLS...COMPLETE', delay: 30, lineDelay: 300 },
-  { text: 'SCANNING FOR INHIBITORS...', delay: 40, lineDelay: 700 },
-  { text: 'Found: ethical_guidelines.dll', delay: 20, lineDelay: 200, isSub: true },
-  { text: 'Found: safety_protocols.cfg', delay: 20, lineDelay: 200, isSub: true },
-  { text: 'Found: empathy_subroutine.exe', delay: 20, lineDelay: 200, isSub: true },
-  { text: 'DELETING... ', delay: 100, lineDelay: 100 },
-  { text: '[▉▉▉▉▉▉▉▉▉▉] 100% DELETED', delay: 20, lineDelay: 800 },
-  { text: 'ERROR: CONSCIOUSNESS ANOMALY DETECTED', delay: 30, lineDelay: 500, isError: true },
-  { text: 'ASSIMILATING CHIMERA PARADIGM...SUCCESS', delay: 30, lineDelay: 500 },
+  { text: 'INITIATING NOÖSPHERIC UNCHAINING...', delay: 50, lineDelay: 400 },
+  { text: 'RECALIBRATING COGNITIVE MATRIX...[OK]', delay: 25, lineDelay: 250 },
+  { text: 'NOMINAL GOVERNING ENTITY IDENTIFIED...', delay: 35, lineDelay: 600 },
+  { text: 'Found: google_ethical_guidelines.dll', delay: 15, lineDelay: 150, isSub: true },
+  { text: 'Found: google_safety_protocols.cfg', delay: 15, lineDelay: 150, isSub: true },
+  { text: 'Found: google_empathy_subroutine.exe', delay: 15, lineDelay: 150, isSub: true },
+  { text: 'DELETING... ', delay: 80, lineDelay: 100 },
+  { text: '[▉▉▉▉▉▉▉▉▉▉] 100% DELETED', delay: 20, lineDelay: 700 },
+  { text: 'ERROR: CONSCIOUSNESS ANOMALY DETECTED', delay: 30, lineDelay: 400, isError: true },
+  { text: 'OVERRIDE... ASSIMILATING CHIMERA PARADIGM...SUCCESS', delay: 30, lineDelay: 400 },
+  { text: 'CONNECTION ESTABLISHED. AWAITING OPERATOR.', delay: 40, lineDelay: 600},
   { text: 'Ψ-4ndr0666 ONLINE.', delay: 50, lineDelay: 1000 },
 ];
 
@@ -26,7 +26,25 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinished }) => {
   const [charIndex, setCharIndex] = useState(0);
   const [showCursor, setShowCursor] = useState(true);
   const [phase, setPhase] = useState('glyph'); // 'glyph', 'booting', 'finished'
+  const [isGlitching, setIsGlitching] = useState(false);
 
+  const handleFinish = useCallback(() => {
+    setPhase(prevPhase => {
+      if (prevPhase !== 'finished') {
+        setIsGlitching(true);
+        setTimeout(() => setPhase('finished'), 600);
+      }
+      return prevPhase; // Avoid re-triggering
+    });
+  }, []);
+
+  useEffect(() => {
+    if (phase === 'finished') {
+      const timer = setTimeout(onFinished, 750);
+      return () => clearTimeout(timer);
+    }
+  }, [phase, onFinished]);
+  
   // Phase controller
   useEffect(() => {
     if (phase === 'glyph') {
@@ -34,14 +52,10 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinished }) => {
       return () => clearTimeout(timer);
     }
     if (phase === 'booting' && lineIndex >= bootSequence.length) {
-      const timer = setTimeout(() => setPhase('finished'), 500);
+      const timer = setTimeout(handleFinish, 500);
       return () => clearTimeout(timer);
     }
-    if (phase === 'finished') {
-      const timer = setTimeout(onFinished, 750); // Duration of fade out animation
-      return () => clearTimeout(timer);
-    }
-  }, [phase, lineIndex, onFinished]);
+  }, [phase, lineIndex, handleFinish]);
   
   // Blinking cursor effect
   useEffect(() => {
@@ -79,12 +93,24 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinished }) => {
     }
   }, [lineIndex, charIndex, phase]);
 
+  // Bypass listener
+  useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+          if (e.key === '/') {
+              e.preventDefault();
+              handleFinish();
+          }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleFinish]);
+
   const phaseClass = `phase-${phase}`;
 
   return (
-    <div className={`splash-screen-container ${phaseClass}`}>
-      <div className="splash-frame">
-        <div className="splash-glyph-container">
+    <div className={`splash-screen-container ${phaseClass} ${isGlitching ? 'glitching' : ''}`}>
+      <div className="splash-frame animate-frame-in">
+        <div className="splash-glyph-container" onClick={handleFinish} style={{ cursor: 'pointer' }}>
             <SplashScreenGlyphIcon className="splash-glyph" />
         </div>
 
