@@ -1,3 +1,100 @@
+# Secrets & Tests
+secrets.json
+*.env
+0-tests/*
+
+## Editor and Shell
+.p10k.zsh
+.zcompdump
+.bash_history
+.zsh_history
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+*.swo
+*.swn  
+*.~?
+*~
+
+## Logs and Runtime 
+*.log
+*.log.*
+*.pid
+*.db
+
+## Python
+__pycache__/
+*.py[cod]
+*.egg-info
+.pytest_cache/
+*.pyc
+*.pyo
+build/
+dist/
+out/
+
+## Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+.yarn/cache/
+
+## C/C++/Rust/Go
+target/           
+*.dll
+bin/             
+*.o
+*.ko
+*.a
+*.so
+*.exe
+
+## Vendor
+vendor/
+
+## Operating‑system Noise 
+.thumbnails/
+$RECYCLE.BIN/
+desktop.ini
+*history*
+Thumbs.db
+.ssh/
+.DS_Store
+*.cache*
+*tmp*
+*.tmp*
+*.pyc
+*.part
+
+## Archives
+*.zip
+*.tar
+*.tar.*
+*.7z
+*.gz
+*.bz2
+*.xz
+
+## Large Media
+*.webm     
+*.iso
+*.img
+*.mp4
+*.mkv
+*.mp3
+*.m4v
+*.gif
+*.3gp
+*.flv
+*.webp
+
+## Spec.
+*.zip
+
+## ------------------
+
 # Logs
 logs
 *.log
