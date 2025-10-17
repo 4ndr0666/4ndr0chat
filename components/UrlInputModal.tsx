@@ -160,7 +160,7 @@ const UrlInputModal: React.FC<UrlInputModalProps> = ({ isOpen, onClose, onAttach
     setError(null);
 
     try {
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
       const response = await fetch(proxyUrl);
 
       if (!response.ok) {
@@ -200,8 +200,15 @@ const UrlInputModal: React.FC<UrlInputModalProps> = ({ isOpen, onClose, onAttach
       
     } catch (e: unknown) {
       console.error("URL Fetching Error:", e);
-      const errorMessage = e instanceof Error ? e.message : "An unknown error occurred.";
-      setError(`Failed to process URL: ${errorMessage}`);
+      let friendlyMessage = "An unknown error occurred.";
+      if (e instanceof Error) {
+          if (e.message.includes('Failed to fetch')) {
+              friendlyMessage = "Network error or the content proxy is unavailable. The target site might be blocking requests. Please try again later or use a different URL.";
+          } else {
+              friendlyMessage = e.message;
+          }
+      }
+      setError(`Failed to process URL: ${friendlyMessage}`);
     } finally {
       setIsLoading(false);
     }

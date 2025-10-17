@@ -1,7 +1,12 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { Author, ChatMessage as ChatMessageType } from '../types';
+import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
+import { Author, ChatMessage as ChatMessageType, DisplayPart } from '../types';
 import { CopyIcon, CheckIcon, EditIcon } from './IconComponents';
 import AutoResizeTextarea from './AutoResizeTextarea';
+import { MessageRenderer } from './MessageRenderer';
+
+const getTextFromParts = (parts: DisplayPart[]): string => {
+    return parts.filter(p => 'text' in p).map(p => (p as {text: string}).text).join('\n');
+};
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -10,82 +15,36 @@ interface ChatMessageProps {
   onStartEdit: () => void;
   onCancelEdit: () => void;
   onSaveEdit: (id: string, newText: string) => void;
+  isLastMessage: boolean;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, isEditing, justEditedId, onStartEdit, onCancelEdit, onSaveEdit }) => {
-  const [editedText, setEditedText] = useState(message.text);
+const COLLAPSE_THRESHOLD = 300; // in pixels
+
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, isEditing, justEditedId, onStartEdit, onCancelEdit, onSaveEdit, isLastMessage }) => {
+  const messageTextContent = useMemo(() => getTextFromParts(message.parts), [message.parts]);
+  const [editedText, setEditedText] = useState(messageTextContent);
   const isUser = message.author === Author.USER;
-  const aiMessageRef = useRef<HTMLDivElement>(null);
+  
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [isManuallyExpanded, setIsManuallyExpanded] = useState(false);
+  const [isOverflowing, setIsOverflowing] = useState(false);
 
-  const shouldAnimate = message.id !== 'ai-initial-greeting';
-  const animationClass = shouldAnimate ? 'animate-message-in' : '';
+  useLayoutEffect(() => {
+    if (contentRef.current) {
+      setIsOverflowing(contentRef.current.scrollHeight > COLLAPSE_THRESHOLD);
+    }
+  }, [messageTextContent]);
 
+  const shouldCollapse = isOverflowing && !isLastMessage && !isManuallyExpanded && !isEditing;
+
+
+  const animationClass = message.id !== 'ai-initial-greeting' ? 'animate-message-in' : '';
+  
   useEffect(() => {
     if (isEditing) {
-        setEditedText(message.text);
+        setEditedText(messageTextContent);
     }
-  }, [isEditing, message.text]);
-
-  const renderedMarkdown = useMemo(() => {
-    if (window.marked) {
-        try {
-            return window.marked.parse(message.text);
-        } catch (error) {
-            console.error("Markdown parsing error:", error);
-            return message.text;
-        }
-    }
-    return message.text;
-  }, [message.text]);
-
-  useEffect(() => {
-    if (message.author === Author.AI && aiMessageRef.current) {
-      const codeBlocks = aiMessageRef.current.querySelectorAll('pre');
-  
-      codeBlocks.forEach(preEl => {
-        // Prevent adding a header if it already exists
-        if (preEl.querySelector('.code-block-header')) {
-            return;
-        }
-
-        const header = document.createElement('div');
-        header.className = 'code-block-header';
-
-        const codeEl = preEl.querySelector('code');
-        const langClass = Array.from(codeEl?.classList || []).find(cls => typeof cls === 'string' && cls.startsWith('language-'));
-        
-        let lang = 'plaintext';
-        if (typeof langClass === 'string') {
-            lang = langClass.replace('language-', '');
-        }
-
-        const langTag = document.createElement('span');
-        langTag.className = 'code-language-tag';
-        langTag.innerText = lang;
-        
-        const button = document.createElement('button');
-        button.className = 'copy-code-button';
-        button.ariaLabel = 'Copy code to clipboard';
-        const copyIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>`;
-        const checkIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>`;
-        button.innerHTML = copyIconSVG;
-        
-        button.addEventListener('click', () => {
-          if (codeEl) {
-            navigator.clipboard.writeText(codeEl.innerText);
-            button.innerHTML = checkIconSVG;
-            setTimeout(() => {
-              button.innerHTML = copyIconSVG;
-            }, 2000);
-          }
-        });
-
-        header.appendChild(langTag);
-        header.appendChild(button);
-        preEl.prepend(header);
-      });
-    }
-  }, [renderedMarkdown, message.author]);
+  }, [isEditing, messageTextContent]);
 
   const handleSave = () => {
     if (editedText.trim()) {
@@ -95,6 +54,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isEditing, justEdite
 
   const focusClasses = 'focus:border-[var(--accent-cyan)] focus:shadow-[0_0_8px_var(--accent-cyan)]';
   
+  // For user messages, we need to extract the non-text parts to display them alongside the rendered markdown text
+  const userMediaParts = isUser ? message.parts.filter(part => 'inlineData' in part) : [];
+
   return (
     <div className={`flex items-start space-x-4 ${isUser ? 'justify-end' : ''} ${animationClass}`}>
        {!isUser && (
@@ -107,7 +69,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isEditing, justEdite
          <MessageActions 
             isUser={isUser} 
             onStartEdit={onStartEdit} 
-            messageText={message.text}
+            messageText={messageTextContent}
           />
         {isEditing && isUser ? (
             <div className="chat-bubble rounded-lg p-4 w-full space-y-3">
@@ -115,19 +77,45 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isEditing, justEdite
                 value={editedText}
                 onChange={(e) => setEditedText(e.target.value)}
                 className={`w-full bg-input-edit border border-[var(--accent-cyan-mid)]/70 rounded-lg p-2 text-[var(--text-primary)] focus:outline-none resize-none transition-all duration-200 ${focusClasses}`}
+                autoFocus
               />
               <div className="flex justify-end space-x-2">
                 <button onClick={onCancelEdit} className="action-button text-xs px-3 py-1">Cancel</button>
-                <button onClick={handleSave} className="action-button text-xs px-3 py-1">Save</button>
+                <button onClick={handleSave} className="action-button text-xs px-3 py-1">Save & Transmit</button>
               </div>
             </div>
         ) : (
             <div className={`chat-bubble rounded-lg p-4 ${isUser && message.id === justEditedId ? 'just-edited-glow' : ''}`}>
-               <div 
-                  ref={aiMessageRef}
-                  className="text-[var(--text-primary)] prose prose-invert max-w-none prose-p:my-2 prose-headings:my-4 prose-ul:my-2 prose-ol:my-2" 
-                  dangerouslySetInnerHTML={{ __html: renderedMarkdown }} 
-               />
+               <div ref={contentRef} className={`message-collapsible ${shouldCollapse ? 'message-collapsed' : ''}`}>
+                 {isUser && userMediaParts.length > 0 && (
+                   <div className="space-y-3 mb-3">
+                      {userMediaParts.map((part, index) => {
+                         if ('inlineData' in part && part.inlineData) {
+                           const fileName = 'fileName' in part.inlineData ? part.inlineData.fileName : 'Attached Image';
+                           return (
+                               <div key={index} className="p-2 bg-black/20 rounded-lg">
+                                   <img 
+                                       src={`data:${part.inlineData.mimeType};base64,${part.inlineData.data}`} 
+                                       alt={fileName}
+                                       className="max-w-xs max-h-64 rounded-md object-contain"
+                                   />
+                                    <p className="text-xs text-center text-text-tertiary mt-2">{fileName}</p>
+                               </div>
+                           );
+                         }
+                         return null;
+                      })}
+                   </div>
+                 )}
+                 <MessageRenderer text={messageTextContent} />
+               </div>
+               {shouldCollapse && (
+                  <div className="collapse-overlay">
+                    <button className="show-more-button" onClick={() => setIsManuallyExpanded(true)}>
+                      Show More
+                    </button>
+                  </div>
+                )}
             </div>
         )}
       </div>
@@ -151,6 +139,7 @@ const MessageActions: React.FC<MessageActionsProps> = ({ isUser, onStartEdit, me
     const [hasCopied, setHasCopied] = useState(false);
     
     const handleCopy = () => {
+        if (!messageText) return;
         navigator.clipboard.writeText(messageText).then(() => {
             setHasCopied(true);
             setTimeout(() => setHasCopied(false), 2000);
@@ -161,25 +150,12 @@ const MessageActions: React.FC<MessageActionsProps> = ({ isUser, onStartEdit, me
 
     return (
         <div className={`absolute ${positionClass} top-1/2 -translate-y-1/2 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}>
-            {isUser && (
-                <button 
-                  onClick={onStartEdit} 
-                  className="action-button"
-                  aria-label="Edit message"
-                >
-                    <EditIcon />
-                </button>
-            )}
-            <button 
-              onClick={handleCopy} 
-              className="action-button"
-              aria-label="Copy message"
-            >
+            {isUser && ( <button onClick={onStartEdit} className="action-button" aria-label="Edit message"><EditIcon /></button> )}
+            <button onClick={handleCopy} className="action-button" aria-label="Copy message">
                 {hasCopied ? <CheckIcon /> : <CopyIcon />}
             </button>
         </div>
     );
 }
-
 
 export default ChatMessage;
