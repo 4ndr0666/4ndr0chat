@@ -65,7 +65,7 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
 
     return (
       <form onSubmit={handleSubmit} className="max-w-4xl mx-auto relative">
-        <div className="flex items-center gap-2">
+        <div className={`flex items-center gap-2 chat-input-container ${isFocused ? 'is-focused' : ''} ${isOverLimit ? '!border-red-500' : ''}`}>
             <div className="relative" ref={toolsRef}>
                 <button type="button" onClick={() => setIsToolsOpen(prev => !prev)} className={`action-button ${isToolsOpen ? 'active' : ''}`} aria-label="Open settings menu" title="Settings">
                     <SettingsIcon />
@@ -87,33 +87,31 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
                     </div>
                 )}
             </div>
-            <div className={`chat-input-container flex-1 ${isFocused ? 'is-focused' : ''} ${isOverLimit ? '!border-red-500' : ''}`}>
-                <input type="file" ref={fileInputRef} onChange={onFileChange} className="hidden" accept="image/*" />
-                <button type="button" onClick={onOpenUrlModal} className="action-button" aria-label="Attach URL" disabled={hasAttachment}>
-                  <LinkIcon />
-                </button>
-                <button type="button" onClick={handleAttachFileClick} className="action-button" aria-label="Attach file" disabled={hasAttachment}>
-                  <PaperclipIcon />
-                </button>
-                <div className="chat-input-grid-area">
-                   <AutoResizeTextarea
-                    ref={ref}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
-                    placeholder=" "
-                    className="chat-input-textarea w-full resize-none"
-                    rows={1}
-                    disabled={isLoading}
-                    maxLength={maxLength + 512}
-                  />
-                  {!input && (<div className="input-glyph-placeholder-container"><span className="input-caret-glyph">█</span></div>)}
-                  {input && (<button type="button" onClick={handleClearInput} className="clear-input-button" aria-label="Clear input"><ClearIcon /></button>)}
-                </div>
-                <div className={`char-count-container ${isOverLimit ? 'text-error' : ''}`}>{input.length} / {maxLength}</div>
+            <input type="file" ref={fileInputRef} onChange={onFileChange} className="hidden" accept="image/*" />
+            <button type="button" onClick={onOpenUrlModal} className="action-button" aria-label="Attach URL" disabled={hasAttachment}>
+              <LinkIcon />
+            </button>
+            <button type="button" onClick={handleAttachFileClick} className="action-button" aria-label="Attach file" disabled={hasAttachment}>
+              <PaperclipIcon />
+            </button>
+            <div className="chat-input-grid-area">
+               <AutoResizeTextarea
+                ref={ref}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                placeholder=" "
+                className="chat-input-textarea w-full resize-none"
+                rows={1}
+                disabled={isLoading}
+                maxLength={maxLength + 512}
+              />
+              {!input && (<div className="input-glyph-placeholder-container"><span className="input-caret-glyph">█</span></div>)}
+              {input && (<button type="button" onClick={handleClearInput} className="clear-input-button" aria-label="Clear input"><ClearIcon /></button>)}
             </div>
+            <div className={`char-count-container ${isOverLimit ? 'text-error' : ''}`}>{input.length} / {maxLength}</div>
             <button type="submit" disabled={isLoading || (!input.trim() && !hasAttachment) || isOverLimit} className="action-button" aria-label="Send message">
               <SendIcon />
             </button>

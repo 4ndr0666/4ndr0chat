@@ -2,6 +2,7 @@
 secrets.json
 *.env
 0-tests/*
+releases/
 
 ## Editor and Shell
 .p10k.zsh

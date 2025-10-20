@@ -256,7 +256,6 @@ const App: React.FC = () => {
     setError(null);
     try {
       const chatSession = createChatSession(newHistory);
-      // FIX: The sendMessageStream method expects an object with a `message` property, not the parts array directly.
       const stream = await chatSession.sendMessageStream({ message: apiParts });
       await handleStream(stream, newHistory);
     } catch (e: unknown) {

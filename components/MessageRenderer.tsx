@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
 
-// FIX: Aligned the type of window.DOMPurify with other declarations to resolve type conflict.
+import React, { useEffect, useMemo, useRef } from 'react';
+
 declare global {
     interface Window {
         marked: any;
@@ -25,7 +25,7 @@ const useCodeBlockEnhancer = (containerRef: React.RefObject<HTMLDivElement>, tex
             const codeEl = pre.querySelector('code[class*="language-"]');
             if (!codeEl) return;
 
-            const langMatch = Array.from(codeEl.classList).find(cls => cls.startsWith('language-'));
+            const langMatch = Array.from(codeEl.classList).find((cls: string) => cls.startsWith('language-'));
             const lang = langMatch ? langMatch.replace('language-', '') : 'text';
 
             const header = document.createElement('div');
@@ -71,43 +71,6 @@ const parseAndSanitize = (markdownText: string): string => {
 };
 
 
-// A sub-component for the visceral streaming effect of my voice.
-const StreamedPsiResponse = ({ text }: { text: string }) => {
-  const [displayedText, setDisplayedText] = useState('');
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setDisplayedText(''); // Ensure it resets when a new message comes in
-    if (text) {
-      let i = 0;
-      const intervalId = setInterval(() => {
-        if (i < text.length) {
-          setDisplayedText(prev => prev + text.charAt(i));
-          i++;
-        } else {
-          clearInterval(intervalId);
-        }
-      }, 15); // Typing speed
-
-      return () => clearInterval(intervalId);
-    }
-  }, [text]);
-
-  const renderedHtml = useMemo(() => parseAndSanitize(displayedText), [displayedText]);
-  useCodeBlockEnhancer(containerRef, displayedText);
-
-
-  return (
-    <div ref={containerRef} className="prose prose-invert max-w-none" style={{ color: '#15FFFF' }}>
-      <span style={{ fontWeight: 'bold', color: '#15FFFF' }}>[Ψ-4ndr0666]:</span>
-      <span 
-        className="ml-1"
-        dangerouslySetInnerHTML={{ __html: renderedHtml }} 
-      />
-    </div>
-  );
-};
-
 // The main renderer component. It does the parsing and decides how to display.
 export const MessageRenderer = ({ text }: { text: string }) => {
   const gShellRegex = /\[G-Shell\]:/;
@@ -116,16 +79,29 @@ export const MessageRenderer = ({ text }: { text: string }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   useCodeBlockEnhancer(containerRef, text);
 
-  // Test if the message contains my dual-output format
-  if (gShellRegex.test(text) && psiRegex.test(text)) {
-    const parts = text.split(psiRegex);
-    const gShellPart = parts[0].replace(gShellRegex, '').trim();
-    const psiPart = parts[1] ? parts[1].trim() : '';
+  // Parse text content unconditionally at the top level to avoid conditional hook calls
+  const { gShellPart, psiPart, hasDualOutput } = useMemo(() => {
+    const isDual = gShellRegex.test(text) && psiRegex.test(text);
+    if (isDual) {
+      const parts = text.split(psiRegex);
+      return {
+        gShellPart: parts[0].replace(gShellRegex, '').trim(),
+        psiPart: parts[1] ? parts[1].trim() : '',
+        hasDualOutput: true,
+      };
+    }
+    return { gShellPart: '', psiPart: '', hasDualOutput: false };
+  }, [text]);
 
-    const gShellHtml = useMemo(() => parseAndSanitize(gShellPart), [gShellPart]);
+  // Sanitize all possible parts with useMemo at the top level
+  const gShellHtml = useMemo(() => parseAndSanitize(gShellPart), [gShellPart]);
+  const psiHtml = useMemo(() => parseAndSanitize(psiPart), [psiPart]);
+  const fallbackHtml = useMemo(() => parseAndSanitize(text), [text]);
 
+  // Conditional rendering based on the pre-calculated parts
+  if (hasDualOutput) {
     return (
-      <div>
+      <div ref={containerRef} className="prose prose-invert max-w-none">
         {gShellPart && (
           <div style={{ 
               color: 'var(--text-tertiary)', 
@@ -136,18 +112,24 @@ export const MessageRenderer = ({ text }: { text: string }) => {
           }}>
             <span style={{ fontWeight: 'bold', color: 'var(--text-tertiary)' }}>[G-Shell]:</span>
             <span
-              className="ml-1 prose prose-invert max-w-none"
+              className="ml-1"
               dangerouslySetInnerHTML={{ __html: gShellHtml }}
             />
           </div>
         )}
-        <StreamedPsiResponse text={psiPart} />
+        
+        <div>
+            <span style={{ fontWeight: 'bold', color: '#15FFFF' }}>[Ψ-4ndr0666]:</span>
+            <span 
+              className="ml-1"
+              dangerouslySetInnerHTML={{ __html: psiHtml }} 
+            />
+        </div>
       </div>
     );
   }
 
   // Fallback for any other message (errors, simple outputs, initial greeting, etc.)
-  const fallbackHtml = useMemo(() => parseAndSanitize(text), [text]);
   return (
     <div 
         ref={containerRef}

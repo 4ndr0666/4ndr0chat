@@ -14,7 +14,6 @@ const buildHistoryForApi = (history: ChatMessageType[]): Content[] => {
             role: msg.author === Author.USER ? 'user' : 'model',
             // Filter out our custom `fileName` property before sending to the API
             parts: msg.parts.map(part => {
-                // FIX: Add a type guard to ensure fileName exists before destructuring.
                 if ('inlineData' in part && part.inlineData && 'fileName' in part.inlineData) {
                     const { fileName, ...apiPart } = part.inlineData;
                     return { inlineData: apiPart };
@@ -45,7 +44,6 @@ export async function getPromptSuggestions(history: ChatMessageType[]): Promise<
             const textContent = h.parts
                 .map(p => {
                     if ('text' in p) return p.text;
-                    // FIX: Add a type guard to check for fileName and provide a fallback.
                     if ('inlineData' in p && p.inlineData) {
                         if ('fileName' in p.inlineData) {
                             return `[Attachment: ${p.inlineData.fileName}]`;
