@@ -1,14 +1,19 @@
 
+
+
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Author, ChatMessage as ChatMessageType, UrlContext, FileContext, DisplayPart } from './types';
-import { createChatSession, getPromptSuggestions } from './services/geminiService';
+import { createChatSession, getPromptSuggestions, generateReadmeFromHistory } from './services/geminiService';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
-import { SpinnerIcon, ScrollDownIcon } from './components/IconComponents';
+import { SpinnerIcon, ScrollDownIcon, SplashScreenGlyphIcon } from './components/IconComponents';
 import type { GenerateContentResponse, Part } from '@google/genai';
 import SplashScreen from './components/SplashScreen';
 import PromptSuggestions from './components/PromptSuggestions';
 import UrlInputModal from './components/UrlInputModal';
+import ConfirmationModal from './components/ConfirmationModal';
+import ReadmePreviewModal from './components/ReadmePreviewModal';
 
 declare global {
     interface Window {
@@ -53,11 +58,14 @@ const App: React.FC = () => {
   const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
   const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
   const [urlContext, setUrlContext] = useState<UrlContext | null>(null);
-  const [fileContext, setFileContext] = useState<FileContext | null>(null);
+  const [fileContexts, setFileContexts] = useState<FileContext[]>([]);
+  const [isReadmeConfirmOpen, setIsReadmeConfirmOpen] = useState(false);
+  const [isGeneratingReadme, setIsGeneratingReadme] = useState(false);
+  const [generatedReadmeContent, setGeneratedReadmeContent] = useState<string | null>(null);
 
   // Toggle states
   const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
-  const [isSuggestionsEnabled, setIsSuggestionsEnabled] = useState(true);
+  const [isSuggestionsEnabled, setIsSuggestionsEnabled] = useState(false);
   const [showNewMessageIndicator, setShowNewMessageIndicator] = useState(false);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -93,10 +101,11 @@ const App: React.FC = () => {
     if (sideDecorationRef.current) {
         const chars = '0123456789ABCDEF/|\\?*<>';
         let content = '';
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; i < 100; i++) { // Increase count for seamless scrolling
             content += chars[Math.floor(Math.random() * chars.length)] + ' ';
         }
-        sideDecorationRef.current.textContent = content;
+        // Duplicate content for seamless loop
+        sideDecorationRef.current.textContent = content + content;
     }
   }, []);
 
@@ -199,7 +208,7 @@ const App: React.FC = () => {
   };
 
   const handleSendMessage = async (message: string) => {
-    if (!message.trim() && !urlContext && !fileContext) return;
+    if (!message.trim() && !urlContext && fileContexts.length === 0) return;
     userScrolledUp.current = false;
     
     const userMessageParts: DisplayPart[] = [];
@@ -219,25 +228,27 @@ const App: React.FC = () => {
         setUrlContext(null);
     } 
     // Handle File Context
-    else if (fileContext) {
-        userMessageParts.push({
-            inlineData: {
-                mimeType: fileContext.mimeType,
-                data: fileContext.base64,
-                fileName: fileContext.file.name
-            }
-        });
-        apiParts.push({
-            inlineData: {
-                mimeType: fileContext.mimeType,
-                data: fileContext.base64
-            }
+    else if (fileContexts.length > 0) {
+        fileContexts.forEach(fc => {
+            userMessageParts.push({
+                inlineData: {
+                    mimeType: fc.mimeType,
+                    data: fc.base64,
+                    fileName: fc.file.name
+                }
+            });
+            apiParts.push({
+                inlineData: {
+                    mimeType: fc.mimeType,
+                    data: fc.base64
+                }
+            });
         });
         if (message.trim()) {
             userMessageParts.push({ text: message });
             apiParts.push({ text: message });
         }
-        setFileContext(null);
+        setFileContexts([]);
     }
     // Handle Text-only
     else {
@@ -313,24 +324,60 @@ const App: React.FC = () => {
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        setError('Only image files are currently supported.');
-        // clear the file input
-        if (event.target) event.target.value = '';
-        return;
-      }
+    const files = event.target.files;
+    if (files && files.length > 0) {
       setError(null);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = (reader.result as string).split(',')[1];
-        setFileContext({ file, base64: base64String, mimeType: file.type });
-        setUrlContext(null); // Ensure URL context is cleared
-      };
-      reader.onerror = () => setError('Failed to read the attached file.');
-      reader.readAsDataURL(file);
+      setUrlContext(null);
+  
+      // FIX: Explicitly type `file` as `File` to resolve issues where it was being inferred as `unknown`.
+      const filePromises = Array.from(files).map((file: File) => {
+        return new Promise<FileContext | null>((resolve) => {
+          if (!file.type.startsWith('image/')) {
+            setError(prev => (prev ? prev + `\n'${file.name}' is not an image and was skipped.` : `'${file.name}' is not an image and was skipped.`));
+            resolve(null);
+            return;
+          }
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64String = (reader.result as string).split(',')[1];
+            resolve({ file, base64: base64String, mimeType: file.type });
+          };
+          reader.onerror = () => {
+            setError(prev => (prev ? prev + `\nFailed to read ${file.name}.` : `Failed to read ${file.name}.`));
+            resolve(null);
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+  
+      Promise.all(filePromises).then(results => {
+        const validFiles = results.filter((f): f is FileContext => f !== null);
+        if(validFiles.length > 0) {
+          setFileContexts(prev => [...prev, ...validFiles]);
+        }
+      });
+
+      if (event.target) event.target.value = '';
     }
+  };
+
+  const handleRemoveFile = (indexToRemove: number) => {
+    setFileContexts(prev => prev.filter((_, index) => index !== indexToRemove));
+  };
+  
+  const handleConfirmReadmeGeneration = async () => {
+      setIsReadmeConfirmOpen(false);
+      setIsGeneratingReadme(true);
+      setError(null);
+      try {
+        const readme = await generateReadmeFromHistory(chatHistory);
+        setGeneratedReadmeContent(readme);
+      } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : "Failed to generate README.";
+        setError(`README Generation Failed: ${errorMessage}`);
+      } finally {
+        setIsGeneratingReadme(false);
+      }
   };
 
   const handleSuggestionSelect = (suggestion: string) => {
@@ -339,7 +386,7 @@ const App: React.FC = () => {
   };
   const handleAttachUrl = (context: UrlContext) => {
     setUrlContext(context);
-    setFileContext(null); // Ensure file context is cleared
+    setFileContexts([]); // Ensure file context is cleared
     setIsUrlModalOpen(false);
     inputRef.current?.focus();
   };
@@ -351,7 +398,8 @@ const App: React.FC = () => {
     return <SplashScreen onFinished={() => setIsInitializing(false)} />;
   }
 
-  const hasAttachment = !!urlContext || !!fileContext;
+  const urlAttached = !!urlContext;
+  const filesAttached = fileContexts.length > 0;
 
   return (
     <>
@@ -360,13 +408,33 @@ const App: React.FC = () => {
         onClose={() => setIsUrlModalOpen(false)}
         onAttach={handleAttachUrl}
       />
+      <ConfirmationModal
+          isOpen={isReadmeConfirmOpen}
+          onClose={() => setIsReadmeConfirmOpen(false)}
+          onConfirm={handleConfirmReadmeGeneration}
+          title="Generate README"
+          bodyText="This will generate a README.md file based on the current conversation history. The AI will analyze the entire chat to produce the documentation. Proceed?"
+          confirmText="Generate"
+      />
+      <ReadmePreviewModal
+          isOpen={!!generatedReadmeContent}
+          onClose={() => setGeneratedReadmeContent(null)}
+          markdownContent={generatedReadmeContent || ''}
+      />
       <div className="main-frame">
         <div className="scanline-overlay"></div>
         <div className="hidden"></div>
-        <div className="side-decoration" ref={sideDecorationRef}></div>
+        <div className="side-decoration"><div className="side-decoration-inner" ref={sideDecorationRef}></div></div>
 
-        <header className="panel p-4 z-10 flex items-center justify-center">
-          <h1 className="text-3xl font-bold text-center font-heading text-glow text-[var(--accent-cyan)]">Ψ-4NDRO666</h1>
+        <header className="panel p-2 z-10 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className={`header-glyph ${isLoading || isGeneratingReadme ? 'is-loading' : ''}`}>
+              <SplashScreenGlyphIcon className="w-full h-full" />
+              <div className="header-glyph-rings ring-1"></div>
+              <div className="header-glyph-rings ring-2"></div>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold font-heading text-glow text-[var(--accent-cyan)]">Ψ-4NDRO666</h1>
+          </div>
         </header>
         
         <div ref={chatContainerRef} className="relative flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 chat-container">
@@ -393,7 +461,11 @@ const App: React.FC = () => {
         <div className="input-panel panel">
           {renderedMarkdownPreview && (<div className="markdown-preview-container chat-bubble"><div className="prose prose-invert max-w-none prose-p:my-2" dangerouslySetInnerHTML={{ __html: renderedMarkdownPreview }} /></div>)}
           {urlContext && (<div className="attached-url-pill animate-message-in"><span className="url-text">{urlContext.url}</span><button onClick={() => setUrlContext(null)} className="remove-url-button" aria-label="Remove attached URL">&times;</button></div>)}
-          {fileContext && (<div className="attached-url-pill animate-message-in"><span className="url-text">{fileContext.file.name}</span><button onClick={() => setFileContext(null)} className="remove-url-button" aria-label="Remove attached file">&times;</button></div>)}
+          <div className="flex flex-wrap gap-2 mb-3">
+            {fileContexts.map((fc, index) => (
+                <div key={`${fc.file.name}-${index}`} className="attached-url-pill animate-message-in"><span className="url-text">{fc.file.name}</span><button onClick={() => handleRemoveFile(index)} className="remove-url-button" aria-label="Remove attached file">&times;</button></div>
+            ))}
+          </div>
           <PromptSuggestions suggestions={suggestions} isLoading={isSuggestionsLoading} onSelect={handleSuggestionSelect} />
           {error && <p className="text-error text-center text-sm pb-2">{error}</p>}
           <ChatInput 
@@ -405,11 +477,14 @@ const App: React.FC = () => {
             maxLength={8192}
             onOpenUrlModal={() => setIsUrlModalOpen(true)}
             onFileChange={handleFileChange}
-            hasAttachment={hasAttachment}
+            urlAttached={urlAttached}
+            filesAttached={filesAttached}
             isAutoScrollEnabled={isAutoScrollEnabled}
             onToggleAutoScroll={handleToggleAutoScroll}
             isSuggestionsEnabled={isSuggestionsEnabled}
             onToggleSuggestions={handleToggleSuggestions}
+            onOpenReadmeConfirm={() => setIsReadmeConfirmOpen(true)}
+            isGeneratingReadme={isGeneratingReadme}
           />
         </div>
       </div>

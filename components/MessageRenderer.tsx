@@ -1,11 +1,13 @@
 
+
+
 import React, { useEffect, useMemo, useRef } from 'react';
 
 declare global {
     interface Window {
         marked: any;
         DOMPurify: {
-          sanitize: (dirty: string | Node, cfg?: object) => string;
+          sanitize: (dirty:string | Node, cfg?: object) => string;
         };
     }
 }
@@ -26,7 +28,8 @@ const useCodeBlockEnhancer = (containerRef: React.RefObject<HTMLDivElement>, tex
             if (!codeEl) return;
 
             const langMatch = Array.from(codeEl.classList).find((cls: string) => cls.startsWith('language-'));
-            const lang = langMatch ? langMatch.replace('language-', '') : 'text';
+            // FIX: Use a `typeof` check as a type guard for `unknown`. The truthiness check `langMatch ? ...` is not sufficient to narrow the type from `unknown`.
+            const lang = typeof langMatch === 'string' ? langMatch.replace('language-', '') : 'text';
 
             const header = document.createElement('div');
             header.className = 'code-block-header';
@@ -103,23 +106,18 @@ export const MessageRenderer = ({ text }: { text: string }) => {
     return (
       <div ref={containerRef} className="prose prose-invert max-w-none">
         {gShellPart && (
-          <div style={{ 
-              color: 'var(--text-tertiary)', 
-              opacity: 0.7, 
-              marginBottom: '1rem', 
-              borderBottom: '1px solid var(--border-color)',
-              paddingBottom: '0.75rem'
-          }}>
-            <span style={{ fontWeight: 'bold', color: 'var(--text-tertiary)' }}>[G-Shell]:</span>
-            <span
-              className="ml-1"
-              dangerouslySetInnerHTML={{ __html: gShellHtml }}
-            />
-          </div>
+            <div className="g-shell-output">
+                <div className="prose prose-invert max-w-none">
+                    <span className="font-bold">[G-Shell]:</span>
+                    <span className="ml-1" dangerouslySetInnerHTML={{ __html: gShellHtml }}/>
+                </div>
+            </div>
         )}
         
+        <div className="dual-output-divider"></div>
+        
         <div>
-            <span style={{ fontWeight: 'bold', color: '#15FFFF' }}>[Ψ-4ndr0666]:</span>
+            <span className="psi-output-label">[Ψ-4ndr0666]:</span>
             <span 
               className="ml-1"
               dangerouslySetInnerHTML={{ __html: psiHtml }} 

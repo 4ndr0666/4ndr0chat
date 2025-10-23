@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 export const UserIcon: React.FC = () => (
@@ -105,10 +106,25 @@ export const EditIcon: React.FC = () => (
 );
 
 export const SpinnerIcon: React.FC = () => (
-    <div className="relative w-8 h-8">
-        <div className="absolute inset-0 border-2 border-dashed border-[var(--accent-cyan)] rounded-md animate-spin-slow" />
-        <div className="absolute inset-2 border-2 border-dashed border-[var(--accent-cyan-dark)] rounded-md animate-spin-slow [animation-direction:reverse]" />
-    </div>
+    <svg 
+      viewBox="0 0 128 128"
+      xmlns="http://www.w3.org/2000/svg"
+      className="w-8 h-8 animate-spin-slow text-[var(--accent-cyan)] filter drop-shadow-[0_0_4px_var(--accent-cyan)]"
+    >
+      <text
+        x="64"
+        y="84"
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fill="currentColor"
+        stroke="none"
+        fontSize="120"
+        fontWeight="700"
+        fontFamily="'Cinzel Decorative', serif"
+      >
+        Ψ
+      </text>
+    </svg>
 );
 
 export const ScrollUpIcon: React.FC = () => (
@@ -170,8 +186,24 @@ export const SuggestionsOffIcon: React.FC<{className?: string}> = ({className}) 
     </svg>
 );
 
-export const SettingsIcon: React.FC = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
-        <path d="M4 21v-7" /><path d="M4 10V3" /><path d="M12 21v-9" /><path d="M12 8V3" /><path d="M20 21v-5" /><path d="M20 12V3" /><path d="M1 14h6" /><path d="M9 8h6" /><path d="M17 16h6" />
+export const PlusIcon: React.FC<{className?: string}> = ({className}) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className ?? "h-6 w-6"}>
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+    </svg>
+);
+
+export const ReadmeIcon: React.FC<{className?: string}> = ({className}) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className ?? "h-6 w-6"}>
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+    </svg>
+);
+
+export const DownloadIcon: React.FC<{className?: string}> = ({className}) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className ?? "h-6 w-6"}>
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
     </svg>
 );
