@@ -66,11 +66,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isEditing, justEdite
       )}
       
       <div className="relative group max-w-2xl w-full">
-        <MessageActions 
+         <MessageActions 
             isUser={isUser} 
             onStartEdit={onStartEdit} 
             messageText={messageTextContent}
-        />
+          />
         {isEditing && isUser ? (
             <div className="chat-bubble rounded-lg p-4 w-full space-y-3">
               <AutoResizeTextarea
@@ -146,14 +146,14 @@ const MessageActions: React.FC<MessageActionsProps> = ({ isUser, onStartEdit, me
         });
     };
 
-    const positionClass = isUser ? 'user-actions' : 'ai-actions';
+    const positionClass = isUser ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2';
 
     return (
-        <div className={`message-actions-container ${positionClass}`}>
+        <div className={`absolute ${positionClass} top-1/2 -translate-y-1/2 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}>
+            {isUser && ( <button onClick={onStartEdit} className="action-button" aria-label="Edit message"><EditIcon /></button> )}
             <button onClick={handleCopy} className="action-button" aria-label="Copy message">
                 {hasCopied ? <CheckIcon /> : <CopyIcon />}
             </button>
-            {isUser && ( <button onClick={onStartEdit} className="action-button" aria-label="Edit message"><EditIcon /></button> )}
         </div>
     );
 }
