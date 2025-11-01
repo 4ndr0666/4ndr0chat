@@ -8,6 +8,7 @@ interface ConfirmationModalProps {
   bodyText: string;
   confirmText?: string;
   cancelText?: string;
+  variant?: 'danger' | 'default';
 }
 
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ 
@@ -17,9 +18,13 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   title,
   bodyText,
   confirmText = "Confirm",
-  cancelText = "Cancel"
+  cancelText = "Cancel",
+  variant = 'default'
 }) => {
   if (!isOpen) return null;
+
+  const titleClass = variant === 'danger' ? 'text-[var(--danger-color-hover)]' : 'text-glow text-[var(--accent-cyan)]';
+  const confirmButtonClass = variant === 'danger' ? 'danger' : '';
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -27,7 +32,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         <button onClick={onClose} className="modal-close-button" aria-label="Close modal">
             &times;
         </button>
-        <h2 className="text-xl font-heading text-glow text-center mb-4 text-[var(--danger-color-hover)]">{title}</h2>
+        <h2 className={`text-xl font-heading text-center mb-4 ${titleClass}`}>{title}</h2>
         <p className="text-sm text-center text-text-secondary mb-6">
           {bodyText}
         </p>
@@ -40,7 +45,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             </button>
             <button 
               onClick={onConfirm}
-              className="action-button danger px-4 py-2"
+              className={`action-button px-4 py-2 ${confirmButtonClass}`}
             >
               {confirmText}
             </button>

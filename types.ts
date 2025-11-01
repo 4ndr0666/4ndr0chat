@@ -1,3 +1,5 @@
+
+
 import { Part } from "@google/genai";
 
 export enum Author {
@@ -5,8 +7,10 @@ export enum Author {
   AI = 'ai',
 }
 
-// Re-exporting the Part type from the SDK for consistency, 
-// but we'll add our own fileName for UI purposes.
+export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+export const ALLOWED_TEXT_TYPES = ['text/plain', 'text/markdown', 'text/html', 'text/css', 'text/javascript', 'application/json', 'application/xml'];
+
 export type DisplayPart = Part | { inlineData: { mimeType: string; data: string; fileName: string; } };
 
 export interface ChatMessage {
@@ -15,13 +19,24 @@ export interface ChatMessage {
   parts: DisplayPart[];
 }
 
-export interface UrlContext {
+export type ImageAttachment = {
+  type: 'image';
+  file: File;
+  mimeType: string;
+  base64: string;
+};
+
+export type TextAttachment = {
+  type: 'text';
+  file: File;
+  mimeType: string;
+  content: string;
+};
+
+export type UrlAttachment = {
+  type: 'url';
   url: string;
   content: string;
-}
+};
 
-export interface FileContext {
-  file: File;
-  base64: string;
-  mimeType: string;
-}
+export type Attachment = ImageAttachment | TextAttachment | UrlAttachment;

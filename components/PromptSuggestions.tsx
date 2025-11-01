@@ -35,7 +35,7 @@ const PromptSuggestions: React.FC<PromptSuggestionsProps> = ({ suggestions, isLo
     return (
         <div className="prompt-suggestions-container animate-message-in">
             {suggestions.map((suggestion, index) => (
-                <div key={index} className="suggestion-item">
+                <div key={index} className="suggestion-item group min-h-[38px]">
                     <button
                         className="suggestion-text-button"
                         onClick={() => onSelect(suggestion)}
@@ -43,7 +43,7 @@ const PromptSuggestions: React.FC<PromptSuggestionsProps> = ({ suggestions, isLo
                         {suggestion}
                     </button>
                     <button
-                        className="suggestion-copy-button"
+                        className="suggestion-copy-button opacity-0 group-hover:opacity-100"
                         onClick={() => handleCopy(suggestion, index)}
                         aria-label="Copy suggestion"
                     >

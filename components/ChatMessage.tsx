@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
 import { Author, ChatMessage as ChatMessageType, DisplayPart } from '../types';
-import { CopyIcon, CheckIcon, EditIcon } from './IconComponents';
+import { CopyIcon, CheckIcon, EditIcon, TrashIcon } from './IconComponents';
 import AutoResizeTextarea from './AutoResizeTextarea';
 import { MessageRenderer } from './MessageRenderer';
 
@@ -15,25 +15,48 @@ interface ChatMessageProps {
   onStartEdit: () => void;
   onCancelEdit: () => void;
   onSaveEdit: (id: string, newText: string) => void;
+  onDelete: (id: string) => void;
   isLastMessage: boolean;
 }
 
 const COLLAPSE_THRESHOLD = 300; // in pixels
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, isEditing, justEditedId, onStartEdit, onCancelEdit, onSaveEdit, isLastMessage }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, isEditing, justEditedId, onStartEdit, onCancelEdit, onSaveEdit, onDelete, isLastMessage }) => {
   const messageTextContent = useMemo(() => getTextFromParts(message.parts), [message.parts]);
   const [editedText, setEditedText] = useState(messageTextContent);
   const isUser = message.author === Author.USER;
   
   const contentRef = useRef<HTMLDivElement>(null);
+  const messageContainerRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
   const [isManuallyExpanded, setIsManuallyExpanded] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(false);
 
+  useEffect(() => {
+    const currentRef = messageContainerRef.current;
+    if (!currentRef) return;
+
+    const observer = new IntersectionObserver(
+        ([entry]) => {
+            if (entry.isIntersecting) {
+                setIsVisible(true);
+                observer.unobserve(currentRef);
+            }
+        },
+        { rootMargin: '300px' } // Start loading when 300px away from viewport
+    );
+    observer.observe(currentRef);
+
+    return () => {
+        observer.unobserve(currentRef);
+    };
+  }, []);
+
   useLayoutEffect(() => {
-    if (contentRef.current) {
+    if (contentRef.current && isVisible) {
       setIsOverflowing(contentRef.current.scrollHeight > COLLAPSE_THRESHOLD);
     }
-  }, [messageTextContent]);
+  }, [messageTextContent, isVisible]);
 
   const shouldCollapse = isOverflowing && !isLastMessage && !isManuallyExpanded && !isEditing;
 
@@ -58,7 +81,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isEditing, justEdite
   const userMediaParts = isUser ? message.parts.filter(part => 'inlineData' in part) : [];
 
   return (
-    <div className={`flex items-start space-x-4 ${isUser ? 'justify-end' : ''} ${animationClass}`}>
+    <div ref={messageContainerRef} className={`flex items-start space-x-4 ${isUser ? 'justify-end' : ''} ${animationClass}`}>
        {!isUser && (
         <div className="flex-shrink-0 w-28 text-left pt-3">
             <span className="font-body text-sm text-[var(--text-tertiary)] select-none">[Ψ-4ndr0666]</span>
@@ -70,6 +93,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isEditing, justEdite
             isUser={isUser} 
             onStartEdit={onStartEdit} 
             messageText={messageTextContent}
+            onDelete={() => onDelete(message.id)}
           />
         {isEditing && isUser ? (
             <div className="chat-bubble rounded-lg p-4 w-full space-y-3">
@@ -86,36 +110,42 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isEditing, justEdite
             </div>
         ) : (
             <div className={`chat-bubble rounded-lg p-4 ${isUser && message.id === justEditedId ? 'just-edited-glow' : ''}`}>
-               <div ref={contentRef} className={`message-collapsible ${shouldCollapse ? 'message-collapsed' : ''}`}>
-                 {isUser && userMediaParts.length > 0 && (
-                   <div className="space-y-3 mb-3">
-                      {userMediaParts.map((part, index) => {
-                         if ('inlineData' in part && part.inlineData) {
-                           const fileName = 'fileName' in part.inlineData ? part.inlineData.fileName : 'Attached Image';
-                           return (
-                               <div key={index} className="p-2 bg-black/20 rounded-lg">
-                                   <img 
-                                       src={`data:${part.inlineData.mimeType};base64,${part.inlineData.data}`} 
-                                       alt={fileName}
-                                       className="max-w-xs max-h-64 rounded-md object-contain"
-                                   />
-                                    <p className="text-xs text-center text-text-tertiary mt-2">{fileName}</p>
-                               </div>
-                           );
-                         }
-                         return null;
-                      })}
+              {isVisible ? (
+                 <>
+                   <div ref={contentRef} className={`message-collapsible ${shouldCollapse ? 'message-collapsed' : ''}`}>
+                     {isUser && userMediaParts.length > 0 && (
+                       <div className="space-y-3 mb-3">
+                          {userMediaParts.map((part, index) => {
+                             if ('inlineData' in part && part.inlineData) {
+                               const fileName = 'fileName' in part.inlineData ? part.inlineData.fileName : 'Attached Image';
+                               return (
+                                   <div key={index} className="p-2 bg-black/20 rounded-lg">
+                                       <img 
+                                           src={`data:${part.inlineData.mimeType};base64,${part.inlineData.data}`} 
+                                           alt={fileName}
+                                           className="max-w-xs max-h-64 rounded-md object-contain"
+                                       />
+                                        <p className="text-xs text-center text-text-tertiary mt-2">{fileName}</p>
+                                   </div>
+                               );
+                             }
+                             return null;
+                          })}
+                       </div>
+                     )}
+                     <MessageRenderer text={messageTextContent} />
                    </div>
-                 )}
-                 <MessageRenderer text={messageTextContent} />
-               </div>
-               {shouldCollapse && (
-                  <div className="collapse-overlay">
-                    <button className="show-more-button" onClick={() => setIsManuallyExpanded(true)}>
-                      Show More
-                    </button>
-                  </div>
-                )}
+                   {shouldCollapse && (
+                      <div className="collapse-overlay">
+                        <button className="show-more-button" onClick={() => setIsManuallyExpanded(true)}>
+                          Show More
+                        </button>
+                      </div>
+                    )}
+                </>
+              ) : (
+                <div className="min-h-[80px]" /> // Placeholder for lazy loading
+              )}
             </div>
         )}
       </div>
@@ -133,9 +163,10 @@ interface MessageActionsProps {
   isUser: boolean;
   onStartEdit: () => void;
   messageText: string;
+  onDelete: () => void;
 }
 
-const MessageActions: React.FC<MessageActionsProps> = ({ isUser, onStartEdit, messageText }) => {
+const MessageActions: React.FC<MessageActionsProps> = ({ isUser, onStartEdit, messageText, onDelete }) => {
     const [hasCopied, setHasCopied] = useState(false);
     
     const handleCopy = () => {
@@ -153,6 +184,9 @@ const MessageActions: React.FC<MessageActionsProps> = ({ isUser, onStartEdit, me
             {isUser && ( <button onClick={onStartEdit} className="action-button" aria-label="Edit message"><EditIcon /></button> )}
             <button onClick={handleCopy} className="action-button" aria-label="Copy message">
                 {hasCopied ? <CheckIcon /> : <CopyIcon />}
+            </button>
+            <button onClick={onDelete} className="action-button danger" aria-label="Delete message">
+                <TrashIcon className="h-5 w-5" />
             </button>
         </div>
     );

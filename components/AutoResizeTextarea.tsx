@@ -14,11 +14,15 @@ const AutoResizeTextarea = forwardRef<HTMLTextAreaElement, AutoResizeTextareaPro
 
     useEffect(() => {
         if (internalRef.current) {
-            internalRef.current.style.height = 'auto'; // Reset height to shrink if text is deleted
+            // Reset height to 0 to calculate the new scrollHeight correctly.
+            // This allows the CSS transition to work smoothly when shrinking.
+            internalRef.current.style.height = '0px';
             const scrollHeight = internalRef.current.scrollHeight;
+            
+            // Set the new height.
             internalRef.current.style.height = `${scrollHeight}px`;
         }
-    }, [value]);
+    }, [value, props.placeholder]); // Depend on value and placeholder for accurate sizing.
 
     return <textarea ref={internalRef} {...props} />;
 });

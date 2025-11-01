@@ -1,11 +1,13 @@
+
+
 import React, { useState, useEffect } from 'react';
-import { UrlContext } from '../types';
+import { UrlAttachment } from '../types';
 import { SpinnerIcon } from './IconComponents';
 
 interface UrlInputModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAttach: (context: UrlContext) => void;
+  onAttach: (attachment: UrlAttachment) => void;
 }
 
 /**
@@ -14,11 +16,12 @@ interface UrlInputModalProps {
  */
 const getElementScore = (el: HTMLElement): number => {
     const textContent = el.textContent?.trim() || '';
-    if (textContent.length < 25) return 0;
+    if (textContent.length < 50) return 0; // Increased threshold
 
     let score = 1; // Base score for having some text
     score += textContent.split(',').length;
     score += Math.min(Math.floor(textContent.length / 100), 3) * 10;
+    score += el.querySelectorAll('p').length * 10; // Add points for paragraph density
 
     const classAndId = `${el.className} ${el.id}`.toLowerCase();
     if (/(content|article|post|body|entry|main|text)/.test(classAndId)) {
@@ -32,7 +35,7 @@ const getElementScore = (el: HTMLElement): number => {
     }
 
     const tagName = el.tagName.toLowerCase();
-    const positiveTags = ['p', 'pre', 'td', 'article', 'section', 'div'];
+    const positiveTags = ['article', 'section', 'div'];
     const negativeTags = ['address', 'ol', 'ul', 'li', 'form', 'header', 'footer', 'nav'];
     
     if (positiveTags.includes(tagName)) score += 5;
@@ -108,7 +111,7 @@ const findBestContentElement = (docBody: HTMLElement): HTMLElement => {
 
 /**
  * Recursively extracts text from a DOM node, attempting to preserve
- * basic structure like paragraphs and list items.
+ * basic structure like paragraphs, list items, and tables.
  */
 const extractTextWithStructure = (node: Node): string => {
     let text = '';
@@ -118,16 +121,15 @@ const extractTextWithStructure = (node: Node): string => {
         const element = node as HTMLElement;
         const tagName = element.tagName.toLowerCase();
 
-        // Add prefix for list items
-        if (tagName === 'li') {
-            text += '\n* ';
-        }
+        if (tagName === 'li') text += '\n* ';
 
         element.childNodes.forEach(child => {
             text += extractTextWithStructure(child);
         });
 
-        // Add suffix for block-level elements to create paragraphs
+        // Add suffix for block-level elements and table cells to create structure
+        if (tagName === 'td' || tagName === 'th') text += '\t';
+        
         const blockTags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'blockquote', 'pre', 'tr', 'hr', 'ul', 'ol', 'section', 'article', 'header', 'footer'];
         if (blockTags.includes(tagName)) {
             text += '\n';
@@ -196,7 +198,7 @@ const UrlInputModal: React.FC<UrlInputModalProps> = ({ isOpen, onClose, onAttach
         throw new Error("Could not extract any meaningful article text from the URL.");
       }
 
-      onAttach({ url, content: textContent });
+      onAttach({ type: 'url', url, content: textContent });
       
     } catch (e: unknown) {
       console.error("URL Fetching Error:", e);
