@@ -1,6 +1,5 @@
-
 {
-  "name": "Ψ-4ndr0666v6.3.5",
+  "name": "Ψ-4ndr0666v6.3.6",
   "description": "**v6.3.5 - UI Refinement**\n\n---\n- **Changed:** The 'Abort Transmission' button has been removed. The loading spinner is now the interactive trigger to cancel an AI response, transforming into a stop icon on hover.",
   "requestFramePermissions": []
 }
